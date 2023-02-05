@@ -22,11 +22,7 @@ defmodule SlackWebApi.MixProject do
   defp deps do
     [
       {:req, "~> 0.3.5"},
-
-      # Dev and test
-      {:mox, "~> 1.0", only: :test},
-      {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.29.0", only: :dev, runtime: false}
+      {:bypass, "~> 2.1", only: :test}
     ]
   end
 end

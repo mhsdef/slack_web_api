@@ -3,7 +3,6 @@ defmodule SlackWebApi do
   Documentation for `SlackWebApi`.
   """
 
-  @slack_api "https://slack.com/api"
   @second_in_ms 1000
 
   @doc """
@@ -25,57 +24,61 @@ defmodule SlackWebApi do
     end
   end
 
-  def join_channel(channel_id) do
-    post("/conversations.join", %{channel: channel_id})
+  def join_channel(channel_id, mode \\ :sync) do
+    post("/conversations.join", %{channel: channel_id}, mode)
   end
 
-  def leave_channel(channel_id) do
-    post("/conversations.leave", %{channel: channel_id})
+  def leave_channel(channel_id, mode \\ :sync) do
+    post("/conversations.leave", %{channel: channel_id}, mode)
   end
 
   def create_channel(channel_name) do
-    req = build_req()
-
-    case Req.post(req, url: "/conversations.create", json: %{name: channel_name}) do
+    case post("/conversations.create", %{name: channel_name}, :sync) do
       {:ok, response} ->
-        channel_id = response.body.channel.id
+        channel_id = response.body["channel"]["id"]
         GenServer.cast(SlackWebApi.ChannelCache, {:insert_channel, {channel_name, channel_id}})
-        {:ok, channel_id}
+        {:ok, response}
 
       {:error, exception} ->
         {:error, exception}
     end
   end
 
-  def archive_channel(channel_id) do
-    post("/conversations.archive", %{channel: channel_id})
+  def archive_channel(channel_id, mode \\ :sync) do
+    post("/conversations.archive", %{channel: channel_id}, mode)
   end
 
-  def set_channel_topic(channel_id, topic) do
-    post("/conversations.setTopic", %{channel: channel_id, topic: topic})
+  def set_channel_topic(channel_id, topic, mode \\ :sync) do
+    post("/conversations.setTopic", %{channel: channel_id, topic: topic}, mode)
   end
 
-  def invite_to_channel(channel_id, users) do
-    post("/conversations.invite", %{channel: channel_id, users: Enum.join(users, ",")})
+  def invite_to_channel(channel_id, users, mode \\ :sync) do
+    post("/conversations.invite", %{channel: channel_id, users: Enum.join(users, ",")}, mode)
   end
 
-  def send_message(%{channel: _, attachments: _} = message) do
-    post("/chat.postMessage", message)
+  def send_message(message, mode \\ :sync)
+
+  def send_message(%{channel: _, text: _} = message, mode) do
+    post("/chat.postMessage", message, mode)
   end
 
-  def send_message(%{channel: _, blocks: _} = message) do
-    post("/chat.postMessage", message)
+  def send_message(%{channel: _, blocks: _} = message, mode) do
+    post("/chat.postMessage", message, mode)
   end
 
-  def send_message(%{channel: _, text: _} = message) do
-    post("/chat.postMessage", message)
+  def send_message(%{channel: _, attachments: _} = message, mode) do
+    post("/chat.postMessage", message, mode)
   end
 
-  def react_to_message(channel_id, emoji_name, message_ts) do
-    post("/reactions.add", %{channel: channel_id, name: emoji_name, timestamp: message_ts})
+  def react_to_message(channel_id, emoji_name, message_ts, mode \\ :sync) do
+    post("/reactions.add", %{channel: channel_id, name: emoji_name, timestamp: message_ts}, mode)
   end
 
-  def post(path, payload) when is_binary(path) and is_map(payload) do
+  def post(path, payload, :sync) when is_binary(path) and is_map(payload) do
+    Req.post(build_req(), url: path, json: payload)
+  end
+
+  def post(path, payload, :async) when is_binary(path) and is_map(payload) do
     Task.Supervisor.start_child(
       SlackWebApi.ReqSupervisor,
       fn ->
@@ -93,7 +96,7 @@ defmodule SlackWebApi do
   defp build_req() do
     bot_token = Application.fetch_env!(:slack_web_api, :bot_token)
 
-    Req.new(base_url: @slack_api)
+    Req.new(base_url: Application.fetch_env!(:slack_web_api, :api_base_url))
     |> Req.Request.put_new_header("authorization", "Bearer " <> bot_token)
     |> Req.Request.put_new_header("content-type", "application/json; charset=utf-8")
   end

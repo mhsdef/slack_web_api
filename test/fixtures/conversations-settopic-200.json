@@ -1,0 +1,52 @@
+{
+    "ok": true,
+    "channel": {
+        "id": "C12345678",
+        "name": "tips-and-tricks",
+        "is_channel": true,
+        "is_group": false,
+        "is_im": false,
+        "is_mpim": false,
+        "is_private": false,
+        "created": 1649195947,
+        "is_archived": false,
+        "is_general": false,
+        "unlinked": 0,
+        "name_normalized": "tips-and-tricks",
+        "is_shared": false,
+        "is_frozen": false,
+        "is_org_shared": false,
+        "is_pending_ext_shared": false,
+        "pending_shared": [],
+        "parent_conversation": null,
+        "creator": "U12345678",
+        "is_ext_shared": false,
+        "shared_team_ids": [
+            "T12345678"
+        ],
+        "pending_connected_team_ids": [],
+        "is_member": true,
+        "last_read": "1649869848.627809",
+        "latest": {
+            "type": "message",
+            "subtype": "channel_topic",
+            "ts": "1649952691.429799",
+            "user": "U12345678",
+            "text": "set the channel topic: Newwwww topic",
+            "topic": "Newwwww topic"
+        },
+        "unread_count": 1,
+        "unread_count_display": 0,
+        "topic": {
+            "value": "Newwwww topic",
+            "creator": "U12345678",
+            "last_set": 1649952691
+        },
+        "purpose": {
+            "value": "",
+            "creator": "",
+            "last_set": 0
+        },
+        "previous_names": []
+    }
+}
