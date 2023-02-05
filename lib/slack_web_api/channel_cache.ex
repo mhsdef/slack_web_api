@@ -19,14 +19,12 @@ defmodule SlackWebApi.ChannelCache do
   @rate_limit_ms 3000
   @next_refresh 4 * 60 * 60 * 1000
 
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  def start_link(init_args) do
+    GenServer.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
   @impl true
-  def init(_) do
-    bot_token = Application.fetch_env!(:slack_web_api, :bot_token)
-
+  def init([{:bot_token, bot_token}]) do
     state = %{
       cursor: nil,
       req:

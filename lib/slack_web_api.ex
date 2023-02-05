@@ -6,6 +6,18 @@ defmodule SlackWebApi do
   @slack_api "https://slack.com/api"
   @second_in_ms 1000
 
+  @doc """
+  Returns a child specification for SlackWebApi with the given `options`.
+  Both the `:name` option and the `:bot_token` option are optional, though
+  the latter must be set via runtime config if not explicitly provided.
+
+  ## Options
+    * `:name` - the name of the SlackWebApi to be started
+    * `:bot_token` - the bot token to use in Slack API calls
+  """
+  @spec child_spec(keyword) :: Supervisor.child_spec()
+  defdelegate child_spec(options), to: SlackWebApi.Supervisor
+
   def get_channel_id(channel_name) do
     case :ets.lookup(:slack_channels, channel_name) do
       [{_channel_name, channel_id}] -> {:ok, channel_id}
