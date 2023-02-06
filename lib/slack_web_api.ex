@@ -1,6 +1,11 @@
 defmodule SlackWebApi do
   @moduledoc """
-  Documentation for `SlackWebApi`.
+  The Slack Web API is an interface for querying information from and
+  enacting change in a Slack workspace. The Web API is a collection of
+  HTTP RPC-style methods, all with URLs in the form
+  https://slack.com/api/METHOD_FAMILY.method.
+
+  See: https://api.slack.com/web
   """
 
   @second_in_ms 1000
@@ -17,8 +22,8 @@ defmodule SlackWebApi do
   @spec child_spec(keyword) :: Supervisor.child_spec()
   defdelegate child_spec(options), to: SlackWebApi.Supervisor
 
-  def get_channel_id(channel_name) do
-    case :ets.lookup(:slack_channels, channel_name) do
+  def get_channel_id(channel_name, ets_table \\ :slack_channels) do
+    case :ets.lookup(ets_table, channel_name) do
       [{_channel_name, channel_id}] -> {:ok, channel_id}
       _ -> {:error, "Slack channel not found!"}
     end
@@ -72,6 +77,10 @@ defmodule SlackWebApi do
 
   def react_to_message(channel_id, emoji_name, message_ts, mode \\ :sync) do
     post("/reactions.add", %{channel: channel_id, name: emoji_name, timestamp: message_ts}, mode)
+  end
+
+  def get(path, params) when is_binary(path) and is_list(params) do
+    Req.get(build_req(), url: path, params: params)
   end
 
   def post(path, payload, :sync) when is_binary(path) and is_map(payload) do

@@ -15,7 +15,6 @@ defmodule SlackWebApi.ChannelCache do
   use GenServer
   require Logger
 
-  @slack_api "https://slack.com/api/conversations.list"
   @rate_limit_ms 3000
   @next_refresh 4 * 60 * 60 * 1000
 
@@ -25,10 +24,12 @@ defmodule SlackWebApi.ChannelCache do
 
   @impl true
   def init([{:bot_token, bot_token}]) do
+    url = Application.fetch_env!(:slack_web_api, :api_base_url) <> "/conversations.list"
+
     state = %{
       cursor: nil,
       req:
-        Req.new(url: @slack_api)
+        Req.new(url: url)
         |> Req.Request.put_new_header("authorization", "Bearer " <> bot_token)
         |> Req.Request.put_new_header("content-type", "application/json; charset=utf-8")
     }
