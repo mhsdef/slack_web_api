@@ -103,9 +103,10 @@ defmodule SlackWebApi do
   end
 
   defp build_req() do
+    api_url = Application.get_env(:slack_web_api, :api_url, "https://slack.com/api")
     bot_token = Application.fetch_env!(:slack_web_api, :bot_token)
 
-    Req.new(base_url: Application.fetch_env!(:slack_web_api, :api_base_url))
+    Req.new(base_url: api_url)
     |> Req.Request.put_new_header("authorization", "Bearer " <> bot_token)
     |> Req.Request.put_new_header("content-type", "application/json; charset=utf-8")
   end

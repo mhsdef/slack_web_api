@@ -8,7 +8,7 @@ defmodule SlackWebApiTest do
 
   setup do
     bypass = Bypass.open()
-    Application.put_env(:slack_web_api, :api_base_url, "http://localhost:#{bypass.port}")
+    Application.put_env(:slack_web_api, :api_url, "http://localhost:#{bypass.port}")
     {:ok, bypass: bypass}
   end
 

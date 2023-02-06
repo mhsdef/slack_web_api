@@ -23,14 +23,12 @@ defmodule SlackWebApi.ChannelCache do
   end
 
   @impl true
-  def init([{:bot_token, bot_token}, {:ets_table, ets_table}] = _opts) do
-    url = Application.fetch_env!(:slack_web_api, :api_base_url) <> "/conversations.list"
-
+  def init([{:api_url, api_url}, {:bot_token, bot_token}, {:ets_table, ets_table}] = _opts) do
     state = %{
       cursor: nil,
       ets_table: ets_table,
       req:
-        Req.new(url: url)
+        Req.new(url: api_url <> "/conversations.list")
         |> Req.Request.put_new_header("authorization", "Bearer " <> bot_token)
         |> Req.Request.put_new_header("content-type", "application/json; charset=utf-8")
     }

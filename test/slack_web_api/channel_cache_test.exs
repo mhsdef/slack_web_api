@@ -3,7 +3,6 @@ defmodule SlackWebApi.ChannelCacheTest do
 
   setup do
     bypass = Bypass.open()
-    Application.put_env(:slack_web_api, :api_base_url, "http://localhost:#{bypass.port}")
     {:ok, bypass: bypass}
   end
 
@@ -16,7 +15,11 @@ defmodule SlackWebApi.ChannelCacheTest do
     end)
 
     {:ok, state} =
-      SlackWebApi.ChannelCache.init(bot_token: "some_bot_token", ets_table: :channelcache_test)
+      SlackWebApi.ChannelCache.init(
+        api_url: "http://localhost:#{bypass.port}",
+        bot_token: "some_bot_token",
+        ets_table: :channelcache_test
+      )
 
     assert %{
              cursor: nil,
