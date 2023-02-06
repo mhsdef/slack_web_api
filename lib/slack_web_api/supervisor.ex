@@ -11,9 +11,10 @@ defmodule SlackWebApi.Supervisor do
   @impl true
   def init(opts) do
     bot_token = opts[:bot_token] || Application.fetch_env!(:slack_web_api, :bot_token)
+    ets_table = opts[:ets_table] || :slack_channels
 
     children = [
-      {SlackWebApi.ChannelCache, bot_token: bot_token},
+      {SlackWebApi.ChannelCache, bot_token: bot_token, ets_table: ets_table},
       {Task.Supervisor, name: SlackWebApi.ReqSupervisor}
     ]
 

@@ -3,7 +3,7 @@ defmodule SlackWebApiTest do
 
   setup_all do
     Task.Supervisor.start_link(name: SlackWebApi.ReqSupervisor)
-    [ets_table: :ets.new(:slack_api_unit_test, [:set, :public, :named_table])]
+    [ets_table: :ets.new(:slack_channels, [:set, :public, :named_table])]
   end
 
   setup do
@@ -13,12 +13,12 @@ defmodule SlackWebApiTest do
   end
 
   test "get_channel_id/2, :ok" do
-    :ets.insert(:slack_api_unit_test, {"homerun", "C616161"})
-    assert {:ok, "C616161"} = SlackWebApi.get_channel_id("homerun", :slack_api_unit_test)
+    :ets.insert(:slack_channels, {"homerun", "C616161"})
+    assert {:ok, "C616161"} = SlackWebApi.get_channel_id("homerun")
   end
 
   test "get_channel_id/2, :error" do
-    assert {:error, _} = SlackWebApi.get_channel_id("strikeout", :slack_api_unit_test)
+    assert {:error, _} = SlackWebApi.get_channel_id("strikeout")
   end
 
   test "get/2, 200", %{bypass: bypass} do
