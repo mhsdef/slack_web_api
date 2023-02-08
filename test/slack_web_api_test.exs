@@ -218,25 +218,7 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "send_message/2, :async, attachments, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/chat.postMessage", fn conn ->
-      set_response(conn, 200, ~s<{"result": "we good here"}>)
-    end)
-
-    {:ok, pid} =
-      SlackWebApi.send_message(
-        %{
-          channel: "C123456",
-          attachments: ~s<[{"pretext": "pre-hello", "text": "text-world"}]>
-        },
-        :async
-      )
-
-    ref = Process.monitor(pid)
-    assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
-  end
-
-  test "send_message/2, :async, text, 429 then 200", %{bypass: bypass} do
+  test "send_message/2, :async, text, 2x 429", %{bypass: bypass} do
     Bypass.expect(bypass, "POST", "/chat.postMessage", fn conn ->
       conn
       |> Plug.Conn.put_resp_header("content-type", "application/json")
@@ -255,7 +237,11 @@ defmodule SlackWebApiTest do
       set_response(conn, 200, ~s<{"ok": true}>)
     end)
 
-    {:ok, response} = SlackWebApi.react_to_message("C1234567890", "thumbsup", "1234567890.123456")
+    {:ok, response} =
+      SlackWebApi.react_to_message(
+        %{"channel" => "C1234567890", "ts" => "1234567890.123456"},
+        "thumbsup"
+      )
 
     assert response.status == 200
     assert response.body["ok"] == true
@@ -267,7 +253,11 @@ defmodule SlackWebApiTest do
     end)
 
     {:ok, pid} =
-      SlackWebApi.react_to_message("C1234567890", "thumbsup", "1234567890.123456", :async)
+      SlackWebApi.react_to_message(
+        %{"channel" => "C1234567890", "ts" => "1234567890.123456"},
+        "thumbsup",
+        :async
+      )
 
     ref = Process.monitor(pid)
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500

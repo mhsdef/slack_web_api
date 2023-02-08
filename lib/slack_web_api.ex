@@ -71,12 +71,8 @@ defmodule SlackWebApi do
     post("/chat.postMessage", message, mode)
   end
 
-  def send_message(%{channel: _, attachments: _} = message, mode) do
-    post("/chat.postMessage", message, mode)
-  end
-
-  def react_to_message(channel_id, emoji_name, message_ts, mode \\ :sync) do
-    post("/reactions.add", %{channel: channel_id, name: emoji_name, timestamp: message_ts}, mode)
+  def react_to_message(%{"channel" => channel_id, "ts" => ts} = _msg, emoji_name, mode \\ :sync) do
+    post("/reactions.add", %{channel: channel_id, name: emoji_name, timestamp: ts}, mode)
   end
 
   def get(path, params) when is_binary(path) and is_list(params) do
