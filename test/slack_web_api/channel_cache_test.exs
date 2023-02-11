@@ -1,22 +1,19 @@
 defmodule SlackWebApi.ChannelCacheTest do
   use ExUnit.Case, async: true
 
-  setup do
-    bypass = Bypass.open()
-    {:ok, bypass: bypass}
-  end
-
-  @moduletag :capture_log
-  test "init/1, manual insert, refresh one page", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "GET", "/conversations.list", fn conn ->
-      conn
-      |> Plug.Conn.put_resp_header("content-type", "application/json")
-      |> Plug.Conn.resp(200, File.read!("test/fixtures/conversations-list-200.json"))
-    end)
+  test "init/1, manual insert, refresh one page" do
+    TestServer.add("/conversations.list",
+      via: :get,
+      to: fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "application/json")
+        |> Plug.Conn.resp(200, File.read!("test/fixtures/conversations-list-200.json"))
+      end
+    )
 
     {:ok, state} =
       SlackWebApi.ChannelCache.init(
-        api_url: "http://localhost:#{bypass.port}",
+        api_url: TestServer.url(),
         bot_token: "some_bot_token",
         ets_table: :channelcache_test
       )

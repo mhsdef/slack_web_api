@@ -6,12 +6,6 @@ defmodule SlackWebApiTest do
     [ets_table: :ets.new(:slack_channels, [:set, :public, :named_table])]
   end
 
-  setup do
-    bypass = Bypass.open()
-    Application.put_env(:slack_web_api, :api_url, "http://localhost:#{bypass.port}")
-    {:ok, bypass: bypass}
-  end
-
   test "get_channel_id/2, :ok" do
     :ets.insert(:slack_channels, {"homerun", "C616161"})
     assert {:ok, "C616161"} = SlackWebApi.get_channel_id("homerun")
@@ -21,10 +15,13 @@ defmodule SlackWebApiTest do
     assert {:error, _} = SlackWebApi.get_channel_id("strikeout")
   end
 
-  test "get/2, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "GET", "/reactions.list", fn conn ->
-      set_response(conn, 200, File.read!("test/fixtures/reactions-list-200.json"))
-    end)
+  test "get/2, 200" do
+    TestServer.add("/reactions.list",
+      via: :get,
+      to: &set_response(&1, 200, File.read!("test/fixtures/reactions-list-200.json"))
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.get("/reactions.list", count: 10, limit: 10)
 
@@ -33,10 +30,13 @@ defmodule SlackWebApiTest do
     assert is_list(response.body["items"])
   end
 
-  test "join_channel/2, :sync, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.join", fn conn ->
-      set_response(conn, 200, File.read!("test/fixtures/conversations-join-200.json"))
-    end)
+  test "join_channel/2, :sync, 200" do
+    TestServer.add("/conversations.join",
+      via: :post,
+      to: &set_response(&1, 200, File.read!("test/fixtures/conversations-join-200.json"))
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.join_channel("C061EG9SL")
 
@@ -45,10 +45,13 @@ defmodule SlackWebApiTest do
     assert response.body["channel"]["id"] == "C061EG9SL"
   end
 
-  test "join_channel/2, :sync, 429", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.join", fn conn ->
-      set_response(conn, 429, ~s<{"ok": false, "error": "ratelimited"}>)
-    end)
+  test "join_channel/2, :sync, 429" do
+    TestServer.add("/conversations.join",
+      via: :post,
+      to: &set_response(&1, 429, ~s<{"ok": false, "error": "ratelimited"}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.join_channel("C123456")
 
@@ -56,10 +59,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == false
   end
 
-  test "join_channel/2, :async, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.join", fn conn ->
-      set_response(conn, 200, ~s<{"result": "we good here"}>)
-    end)
+  test "join_channel/2, :async, 200" do
+    TestServer.add("/conversations.join",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} = SlackWebApi.join_channel("C061EG9SL", :async)
 
@@ -67,10 +73,13 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "leave_channel/2, :sync, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.leave", fn conn ->
-      set_response(conn, 200, ~s<{"ok": true}>)
-    end)
+  test "leave_channel/2, :sync, 200" do
+    TestServer.add("/conversations.leave",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"ok": true}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.leave_channel("C061EG9SL")
 
@@ -78,10 +87,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == true
   end
 
-  test "leave_channel/2, :sync, 502", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.leave", fn conn ->
-      set_response(conn, 502, ~s<{"ok": false, "error": "service_unavailable"}>)
-    end)
+  test "leave_channel/2, :sync, 502" do
+    TestServer.add("/conversations.leave",
+      via: :post,
+      to: &set_response(&1, 502, ~s<{"ok": false, "error": "service_unavailable"}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.leave_channel("C123456")
 
@@ -89,10 +101,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == false
   end
 
-  test "leave_channel/2, :async, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.leave", fn conn ->
-      set_response(conn, 200, ~s<{"ok": true}>)
-    end)
+  test "leave_channel/2, :async, 200" do
+    TestServer.add("/conversations.leave",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"ok": true}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} = SlackWebApi.leave_channel("C061EG9SL", :async)
 
@@ -100,10 +115,13 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "create_channel/1, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.create", fn conn ->
-      set_response(conn, 200, File.read!("test/fixtures/conversations-create-200.json"))
-    end)
+  test "create_channel/1, 200" do
+    TestServer.add("/conversations.create",
+      via: :post,
+      to: &set_response(&1, 200, File.read!("test/fixtures/conversations-create-200.json"))
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.create_channel("endeavor")
 
@@ -112,10 +130,13 @@ defmodule SlackWebApiTest do
     assert response.body["channel"]["id"] == "C0EAQDV4Z"
   end
 
-  test "archive_channel/2, :sync, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.archive", fn conn ->
-      set_response(conn, 200, ~s<{"ok": true}>)
-    end)
+  test "archive_channel/2, :sync, 200" do
+    TestServer.add("/conversations.archive",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"ok": true}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.archive_channel("C130MSEN3")
 
@@ -123,10 +144,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == true
   end
 
-  test "archive_channel/2, :async, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.archive", fn conn ->
-      set_response(conn, 200, ~s<{"ok": true}>)
-    end)
+  test "archive_channel/2, :async, 200" do
+    TestServer.add("/conversations.archive",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"ok": true}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} = SlackWebApi.archive_channel("C130MSEN3", :async)
 
@@ -134,10 +158,13 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "set_channel_topic/2, :sync, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.setTopic", fn conn ->
-      set_response(conn, 200, File.read!("test/fixtures/conversations-settopic-200.json"))
-    end)
+  test "set_channel_topic/2, :sync, 200" do
+    TestServer.add("/conversations.setTopic",
+      via: :post,
+      to: &set_response(&1, 200, File.read!("test/fixtures/conversations-settopic-200.json"))
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.set_channel_topic("C12345678", "Newwwww topic")
 
@@ -145,10 +172,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == true
   end
 
-  test "set_channel_topic/2, :async, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.setTopic", fn conn ->
-      set_response(conn, 200, ~s<{"result": "we good here"}>)
-    end)
+  test "set_channel_topic/2, :async, 200" do
+    TestServer.add("/conversations.setTopic",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} = SlackWebApi.set_channel_topic("C12345678", "Newwwww topic", :async)
 
@@ -156,10 +186,13 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "invite_to_channel/2, :sync, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.invite", fn conn ->
-      set_response(conn, 200, File.read!("test/fixtures/conversations-invite-200.json"))
-    end)
+  test "invite_to_channel/2, :sync, 200" do
+    TestServer.add("/conversations.invite",
+      via: :post,
+      to: &set_response(&1, 200, File.read!("test/fixtures/conversations-invite-200.json"))
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} =
       SlackWebApi.invite_to_channel(
@@ -171,10 +204,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == true
   end
 
-  test "invite_to_channel/2, :async, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/conversations.invite", fn conn ->
-      set_response(conn, 200, ~s<{"result": "we good here"}>)
-    end)
+  test "invite_to_channel/2, :async, 200" do
+    TestServer.add("/conversations.invite",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} =
       SlackWebApi.invite_to_channel(
@@ -187,10 +223,13 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "send_message/2, :sync, text, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/chat.postMessage", fn conn ->
-      set_response(conn, 200, File.read!("test/fixtures/chat-postmessage-200.json"))
-    end)
+  test "send_message/2, :sync, text, 200" do
+    TestServer.add("/chat.postMessage",
+      via: :post,
+      to: &set_response(&1, 200, File.read!("test/fixtures/chat-postmessage-200.json"))
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.send_message(%{channel: "C123456", text: "Hola, amigo!"})
 
@@ -198,10 +237,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == true
   end
 
-  test "send_message/2, :async, blocks, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/chat.postMessage", fn conn ->
-      set_response(conn, 200, ~s<{"result": "we good here"}>)
-    end)
+  test "send_message/2, :async, blocks, 200" do
+    TestServer.add("/chat.postMessage",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} =
       SlackWebApi.send_message(
@@ -218,13 +260,27 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "send_message/2, :async, text, 2x 429", %{bypass: bypass} do
-    Bypass.expect(bypass, "POST", "/chat.postMessage", fn conn ->
-      conn
-      |> Plug.Conn.put_resp_header("content-type", "application/json")
-      |> Plug.Conn.put_resp_header("retry-after", "0")
-      |> Plug.Conn.resp(429, ~s<{"result": "we bad here, backoff"}>)
-    end)
+  test "send_message/2, :async, text, 429 then 200" do
+    TestServer.add("/chat.postMessage",
+      via: :post,
+      to: fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "application/json")
+        |> Plug.Conn.put_resp_header("retry-after", "0")
+        |> Plug.Conn.resp(429, ~s<{"result": "we bad here, backoff"}>)
+      end
+    )
+
+    TestServer.add("/chat.postMessage",
+      via: :post,
+      to: fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "application/json")
+        |> Plug.Conn.resp(200, ~s<{"result": "we good here"}>)
+      end
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} = SlackWebApi.send_message(%{channel: "C123456", text: "Some such"}, :async)
 
@@ -232,10 +288,13 @@ defmodule SlackWebApiTest do
     assert_receive {:DOWN, ^ref, :process, _, :normal}, 500
   end
 
-  test "react_to_message/2, :sync, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/reactions.add", fn conn ->
-      set_response(conn, 200, ~s<{"ok": true}>)
-    end)
+  test "react_to_message/2, :sync, 200" do
+    TestServer.add("/reactions.add",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"ok": true}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} =
       SlackWebApi.react_to_message(
@@ -247,10 +306,13 @@ defmodule SlackWebApiTest do
     assert response.body["ok"] == true
   end
 
-  test "react_to_message/2, :async, 200", %{bypass: bypass} do
-    Bypass.expect_once(bypass, "POST", "/reactions.add", fn conn ->
-      set_response(conn, 200, ~s<{"ok": true}>)
-    end)
+  test "react_to_message/2, :async, 200" do
+    TestServer.add("/reactions.add",
+      via: :post,
+      to: &set_response(&1, 200, ~s<{"ok": true}>)
+    )
+
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} =
       SlackWebApi.react_to_message(
