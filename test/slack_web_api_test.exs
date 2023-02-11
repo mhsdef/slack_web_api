@@ -6,6 +6,11 @@ defmodule SlackWebApiTest do
     [ets_table: :ets.new(:slack_channels, [:set, :public, :named_table])]
   end
 
+  setup do
+    TestServer.start()
+    Application.put_env(:slack_web_api, :api_url, TestServer.url())
+  end
+
   test "get_channel_id/2, :ok" do
     :ets.insert(:slack_channels, {"homerun", "C616161"})
     assert {:ok, "C616161"} = SlackWebApi.get_channel_id("homerun")
@@ -21,8 +26,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 200, File.read!("test/fixtures/reactions-list-200.json"))
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, response} = SlackWebApi.get("/reactions.list", count: 10, limit: 10)
 
     assert response.status == 200
@@ -35,8 +38,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, File.read!("test/fixtures/conversations-join-200.json"))
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.join_channel("C061EG9SL")
 
@@ -51,8 +52,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 429, ~s<{"ok": false, "error": "ratelimited"}>)
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, response} = SlackWebApi.join_channel("C123456")
 
     assert response.status == 429
@@ -64,8 +63,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} = SlackWebApi.join_channel("C061EG9SL", :async)
 
@@ -79,8 +76,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 200, ~s<{"ok": true}>)
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, response} = SlackWebApi.leave_channel("C061EG9SL")
 
     assert response.status == 200
@@ -92,8 +87,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 502, ~s<{"ok": false, "error": "service_unavailable"}>)
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.leave_channel("C123456")
 
@@ -107,8 +100,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 200, ~s<{"ok": true}>)
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, pid} = SlackWebApi.leave_channel("C061EG9SL", :async)
 
     ref = Process.monitor(pid)
@@ -120,8 +111,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, File.read!("test/fixtures/conversations-create-200.json"))
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} = SlackWebApi.create_channel("endeavor")
 
@@ -136,8 +125,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 200, ~s<{"ok": true}>)
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, response} = SlackWebApi.archive_channel("C130MSEN3")
 
     assert response.status == 200
@@ -149,8 +136,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, ~s<{"ok": true}>)
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} = SlackWebApi.archive_channel("C130MSEN3", :async)
 
@@ -164,8 +149,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 200, File.read!("test/fixtures/conversations-settopic-200.json"))
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, response} = SlackWebApi.set_channel_topic("C12345678", "Newwwww topic")
 
     assert response.status == 200
@@ -178,8 +161,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, pid} = SlackWebApi.set_channel_topic("C12345678", "Newwwww topic", :async)
 
     ref = Process.monitor(pid)
@@ -191,8 +172,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, File.read!("test/fixtures/conversations-invite-200.json"))
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} =
       SlackWebApi.invite_to_channel(
@@ -209,8 +188,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} =
       SlackWebApi.invite_to_channel(
@@ -229,8 +206,6 @@ defmodule SlackWebApiTest do
       to: &set_response(&1, 200, File.read!("test/fixtures/chat-postmessage-200.json"))
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, response} = SlackWebApi.send_message(%{channel: "C123456", text: "Hola, amigo!"})
 
     assert response.status == 200
@@ -242,8 +217,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, ~s<{"result": "we good here"}>)
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} =
       SlackWebApi.send_message(
@@ -280,8 +253,6 @@ defmodule SlackWebApiTest do
       end
     )
 
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
-
     {:ok, pid} = SlackWebApi.send_message(%{channel: "C123456", text: "Some such"}, :async)
 
     ref = Process.monitor(pid)
@@ -293,8 +264,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, ~s<{"ok": true}>)
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, response} =
       SlackWebApi.react_to_message(
@@ -311,8 +280,6 @@ defmodule SlackWebApiTest do
       via: :post,
       to: &set_response(&1, 200, ~s<{"ok": true}>)
     )
-
-    Application.put_env(:slack_web_api, :api_url, TestServer.url())
 
     {:ok, pid} =
       SlackWebApi.react_to_message(
