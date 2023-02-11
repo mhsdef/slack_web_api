@@ -1,0 +1,16 @@
+name: CI
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: OTP 25.2 / Elixir 1.14.3
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: 25.2
+          elixir-version: 1.14.3
+      - run: mix deps.get
+      - run: mix test
