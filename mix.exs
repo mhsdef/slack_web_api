@@ -20,7 +20,7 @@ defmodule SlackWebApi.MixProject do
   defp deps do
     [
       {:req, "~> 0.3.5"},
-      {:bandit, "~> 0.6.8", only: :test},
+      {:bandit, "~> 0.7.2", only: :test},
       {:test_server, "~> 0.1.8", only: :test}
     ]
   end
